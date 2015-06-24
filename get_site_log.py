@@ -21,7 +21,7 @@
 
 import sys, getopt, os, shutil
 import urllib
-from classes import IGSLog as IGSLog
+from classes import IGSLog
 
 #hash table to map data center to log file url
 databases           = {}
@@ -43,23 +43,6 @@ OPTIONS:\n\
    -u, --url\t\tdatabase url.\n\n\
 Report bugs to rg@nmt.edu\n\
 " % (", ".join(databases.keys()))
-
-def indent_tree(elem, level=0):
-    i = "\n" + level*"  "
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + "  "
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            indent_tree(elem, level+1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
-
-
 
 def retrieve_log(url):
     sys.stdout.write('Retrieving '+url + '... ')
