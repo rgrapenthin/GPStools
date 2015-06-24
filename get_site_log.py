@@ -21,7 +21,7 @@
 
 import sys, getopt, os, shutil
 import urllib
-from classes import IGSLog
+from classes.IGSLog import IGSLog
 
 #hash table to map data center to log file url
 databases           = {}
@@ -141,7 +141,7 @@ for a in databases.keys():
             break
 
 if logfile:
-    log = IGSLog.IGSLog(logfile, site)
+    log = IGSLog(logfile, site)
     log.parse()
     log.write(site+".xml")
     

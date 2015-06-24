@@ -19,7 +19,7 @@
 ###########################################################################
 
 import sys, getopt, os, shutil
-from classes import IGSLog
+from classes.IGSLog import IGSLog
 
 def usage():
     print "Usage: igslog2xml -i <site-id | filename> [-o <outfile>] [-h]\n\
@@ -124,11 +124,11 @@ except OSError:
 if os.path.isfile(xmlfile) or os.path.isfile(gps_site_doc+"/"+xmlfile):
     import uuid
     f_expansion = str(uuid.uuid4())    
-    sys.stderr.write("\nWarning: `"+xmlfile+"' already exists. I'll write to `"+xmlfile+"."+f_expansion+"\n")
+    sys.stderr.write("\nWarning: `"+xmlfile+"' already exists. I'll write to `"+xmlfile+"."+f_expansion+"'\n")
     xmlfile = xmlfile+"."+f_expansion
 
 #read, pase, write.
-log = IGSLog.IGSLog(logfile, site)
+log = IGSLog(logfile, site)
 log.parse()
 log.write(xmlfile)
 
