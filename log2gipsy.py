@@ -39,7 +39,7 @@ Report bugs to rg@nmt.edu\n\
 if __name__ == '__main__':
     try:
         #":" and "=" indicate that these parameters take arguments! Do not simply delete these!
-        opts, args = getopt.getopt(sys.argv[1:], "hps:",["help", "site", "pos"])
+        opts, args = getopt.getopt(sys.argv[1:], "hips:",["help", "id", "pos", "site="])
     except getopt.GetoptError as e:
         sys.stderr.write("Error: {0} \n\n".format(e.msg))
         usage()
@@ -50,6 +50,7 @@ if __name__ == '__main__':
     xmlfile             = ''
     gps_site_doc        = os.environ.get('GPS_SITE_DOC')
     pos                 = False
+    sta_id              = False
 
     if not gps_site_doc:
         sys.stderr.write("\nError: GPS_SITE_DOC environment variable must be set and point to log directory")
@@ -61,6 +62,9 @@ if __name__ == '__main__':
         if opt in ("-h", "--help"):
             usage()
             sys.exit(2)
+#get sta_id
+        elif opt in ("-i", "--id"):
+            sta_id = True
 #get sta_pos
         elif opt in ("-p", "--pos"):
             pos = True
@@ -109,6 +113,20 @@ if pos:
              log.XPos(), log.YPos(), log.ZPos(),
              log.XVel(), log.YVel(), log.ZVel(),
              log.comment()
+            )
+
+#print site_id format, if asked for
+if sta_id:
+    #some of these may not exist and hence return None
+    station_name = [log.site_name(), log.loc_city(), log.loc_state(), log.loc_country()]
+    station_name = [s for s in station_name if s is not None]
+    
+
+    print " %.4s %6d %.60s" % \
+            ( 
+             log.site().upper(),
+             log.sta_number(),
+             ", ".join(station_name)
             )
 
 
