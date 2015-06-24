@@ -32,19 +32,17 @@ OPTIONS:\n\
 Report bugs to rg@nmt.edu\n\
 "
 
-############# ############# ############# 
-############# MAIN STUFF
-############# ############# ############# 
-
 def contains_path(filename):
     if os.path.isdir(filename):
         return True
     if os.path.dirname(filename):
         return True
-    
-    
+
     return False
 
+############# ############# ############# 
+############# MAIN STUFF
+############# ############# ############# 
 if __name__ == '__main__':
     try:
         #":" and "=" indicate that these parameters take arguments! Do not simply delete these!
@@ -124,11 +122,11 @@ except OSError:
 if os.path.isfile(xmlfile) or os.path.isfile(gps_site_doc+"/"+xmlfile):
     import uuid
     f_expansion = str(uuid.uuid4())    
-    sys.stderr.write("\nWarning: `"+xmlfile+"' already exists. I'll write to `"+xmlfile+"."+f_expansion+"'\n")
+    sys.stderr.write("\nWarning: `"+xmlfile+"' already exists. I'll write to `"+xmlfile+"."+f_expansion+"\n")
     xmlfile = xmlfile+"."+f_expansion
 
 #read, pase, write.
-log = IGSLog(logfile, site)
+log = IGSLog.IGSLog(logfile, site)
 log.parse()
 log.write(xmlfile)
 

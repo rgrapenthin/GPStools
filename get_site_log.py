@@ -132,10 +132,15 @@ for a in databases.keys():
         ftp.login()
         ftp.cwd("/"+"/".join(url[1:]))
         logfiles = ftp.nlst()
-        sitefile = [filename for filename in logfiles if site in filename][-1]
         ftp.quit()
-        
-        logfile  = retrieve_log(databases[a]+'/'+sitefile)
+
+        try:
+            sitefile = [filename for filename in logfiles if site in filename][-1]
+            logfile  = retrieve_log(databases[a]+'/'+sitefile)
+        except IndexError:
+            sys.stdout.flush()
+            sys.stderr.write("Couldn't find site `"+site.upper()+"'. Bye.\n")
+            sys.exit(2)
 
         if logfile:
             break
