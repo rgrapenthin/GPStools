@@ -116,3 +116,61 @@ class XML_LogReader(object):
     def location(self, which='city-town'):
         return self.root.findall('location')[0].findall(which)[0].text
 
+    def arp_vector(self, direction="east"):
+        tag = 'marker-arp-up-eccentricity'
+
+        if direction == "east":
+            tag = "marker-arp-east-eccentricity"
+        elif direction == "north":
+            tag = "marker-arp-north-eccentricity"
+        elif direction == "up":
+            tag = "marker-arp-up-eccentricity"
+        else:
+            raise Exception("Direction `"+direction+"' in arp_vector is not valid. Choose `east', `north', or `up'.")
+            
+        try:
+            return float(self.root.findall('antennas')[0].findall('antenna')[-1].findall(tag)[0].text)
+        except TypeError:
+            return 0.0
+    
+    def to_text(self, elem):
+        return elem.text if elem is not None else ''
+
+    def to_float(self, elem):
+        #first get the string if element exists
+        x = elem.text if elem is not None else 0.0
+        
+        #then convert to float if sensible value in string
+        try:
+            return float(x) if x is not None else 0.0
+        except ValueError:
+            return 0.0
+
+    def to_date(self, elem):
+        x = elem.text if elem is not None else None
+
+        try:
+            return DT.datetime.strptime(x, '%Y-%m-%dT%H:%MZ')
+        except ValueError:
+            return None
+
+    def antennas(self):
+        ants = []
+        for ant in self.root.findall('antennas')[0].findall('antenna'):
+                ants.append({
+                    'type':             self.to_text(ant.findall('antenna-type')[0]), 
+                    'serial':           self.to_text(ant.findall('serial-number')[0]), 
+                    'arp':              self.to_text(ant.findall('antenna-reference-point')[0]), 
+                    'arp_vec_east':     self.to_float(ant.findall('marker-arp-east-eccentricity')[0]),
+                    'arp_vec_north':    self.to_float(ant.findall('marker-arp-north-eccentricity')[0]),
+                    'arp_vec_up':       self.to_float(ant.findall('marker-arp-up-eccentricity')[0]),
+                    'north-deviation':  self.to_float(ant.findall('alignment-from-true-north')[0]),
+                    'radome-type':      self.to_text(ant.findall('radome-type')[0]),
+                    'radome-serial':    self.to_text(ant.findall('radome-serial-number')[0]), 
+                    'cable-type':       self.to_text(ant.findall('antenna-cable-type')[0]), 
+                    'cable-length':     self.to_float(ant.findall('antenna-cable-length')[0]), 
+                    'installed':        self.to_date(ant.findall('date-installed')[0]),
+                    'removed':          self.to_date(ant.findall('date-removed')[0])
+                    })
+
+        return ants
