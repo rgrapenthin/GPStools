@@ -21,9 +21,9 @@ import os
 class XML_LogReader(object):
 
     #class variables
-    tree           = None              #contains the full IGS log in ASCII format
+    tree            = None              #contains the full IGS log in ASCII format
     root            = None              #root node of XML-DOM
-    siteid          =''                  #need a flag for that.
+    siteid          =''                 #need a flag for that.
     filename        =''
     
     def __init__(self, xml_file, siteid):
@@ -104,6 +104,23 @@ class XML_LogReader(object):
         #official GPS stataion numbers do not yet exist
         return 0
 
+###LOG-SOURCE
+    def url(self):
+        return self.log_source(which='url')
+
+    def archive(self):
+        return self.log_source(which='archive')
+
+    def local_log(self):
+        return self.log_source(which='local-igs-log')
+
+    def date(self):
+        return DT.datetime.strptime(self.log_source(which='date'), '%Y-%m-%dT%H:%MZ')
+
+    def log_source(self, which='archive'):
+        return self.root.findall('log-source')[0].findall(which)[0].text
+
+###LOCATION
     def loc_city(self):
         return self.location(which='city-town')
 
@@ -116,6 +133,7 @@ class XML_LogReader(object):
     def location(self, which='city-town'):
         return self.root.findall('location')[0].findall(which)[0].text
 
+###ARP
     def arp_vector(self, direction="east"):
         tag = 'marker-arp-up-eccentricity'
 

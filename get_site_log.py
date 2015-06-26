@@ -111,15 +111,22 @@ logfile = ''
 
 for a in databases.keys():
     sys.stdout.write("Trying '"+a+"' archive: \t")
+
+    file_from = ''
+    file_url  = ''
     
     if a == 'unavco':
-        logfile  = retrieve_log(databases[a]+'/'+site+'log.txt')
+        file_url  = databases[a]+'/'+site+'log.txt'
+        logfile   = retrieve_log(file_url)
         if logfile:
+            file_from=a
             break
         
     elif a == 'sopac':
-        logfile  = retrieve_log(databases[a]+'/'+site+'.log.txt')
+        file_url  = databases[a]+'/'+site+'.log.txt'
+        logfile  = retrieve_log(file_url)
         if logfile:
+            file_from=a
             break
     #fallback:
     #see if there's a file that contains sitename in its name 
@@ -136,19 +143,24 @@ for a in databases.keys():
 
         try:
             sitefile = [filename for filename in logfiles if site in filename][-1]
-            logfile  = retrieve_log(databases[a]+'/'+sitefile)
+            file_url = databases[a]+'/'+sitefile
+            logfile  = retrieve_log(file_url)
         except IndexError:
             sys.stdout.flush()
             sys.stderr.write("Couldn't find site `"+site.upper()+"'. Bye.\n")
             sys.exit(2)
 
         if logfile:
+            file_from=a
             break
 
 if logfile:
+    local_log = site+"."+file_from+".log"
+    xml_log   = site+".xml"
     log = IGSLog(logfile, site)
     log.parse()
-    log.write(site+".xml")
+    log.retrieved_from(file_from, file_url, local_log)
+    log.write(xml_log)
     
     #move files to site doc archive
     dest = os.environ.get('GPS_SITE_DOC')
@@ -156,8 +168,8 @@ if logfile:
     if dest:
         print "Moving logfiles to site-log archive '"+dest+"'"
         #os.rename won't copy across partitions
-        shutil.move(logfile, dest+"/"+site+".log")
-        shutil.move(site+".xml", dest+"/"+site+".xml")
+        shutil.move(logfile, dest+"/"+local_log)
+        shutil.move(xml_log, dest+"/"+xml_log)
     else:
         print "Environment variable 'GPS_SITE_DOC' not set. logfiles remain in current directory."
 

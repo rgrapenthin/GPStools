@@ -15,6 +15,7 @@
 #####################################################################################
 
 import xml.etree.ElementTree as ET
+from datetime import datetime
 
 class IGSLog(object):
 
@@ -201,7 +202,19 @@ class IGSLog(object):
         self.multiline    = False
         self.useless_indents = False
         self.indent_level = 1
+     
+    def retrieved_from(self, archive, url, local_log):
+        x = ET.SubElement(self.root, 'log-source')
+        a = ET.SubElement(x, 'archive')
+        u = ET.SubElement(x, 'url')
+        d = ET.SubElement(x, 'date')
+        l = ET.SubElement(x, 'local-igs-log')
+        a.text = archive
+        u.text = url
+        d.text = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        l.text = local_log
         
+           
     #this is still in the long form and can probably be shortened, for now
     #we'll keep it in a running version
     def parse(self):

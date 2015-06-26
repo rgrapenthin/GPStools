@@ -180,17 +180,20 @@ if gipsy_svec:
     #start putting them together starting from the newest
     for antenna in reversed(antennas):
         dt = prev_antenna_installed - antenna['installed'] if prev_antenna_installed is not None else DT.timedelta(seconds=946080000.00)
-        
-        svec_string.append( " %.4s %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %12.2f %.9s %11.4f %11.4f %11.4f %11.4f %.1s %.30s" % 
+       
+        svec_string.append( " %.4s %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %12.2f %-9.9s %11.4f %11.4f %11.4f %11.4f %.1s %-60.60s" % 
                             (log.site().upper(), log.site().upper(),
                             antenna['installed'].year, antenna['installed'].month,  antenna['installed'].day, 
                             antenna['installed'].hour, antenna['installed'].minute, antenna['installed'].second,
                             (dt.days*86400+dt.seconds+dt.microseconds/1000.0), antenna['type'][:9],
                             antenna['arp_vec_east'], antenna['arp_vec_north'], antenna['arp_vec_up'], 
-                            0.0, 'l', 'add comment')
+                            0.0, 'l', log.local_log())
                             
                           )
-
+        
+        #keep this date to calculate the number of seconds the antenna was in use
+        prev_antenna_installed = antenna['installed']
+        
     #put them out in chronological order
     for svec in reversed(svec_string):
         print svec
