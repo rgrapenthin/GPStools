@@ -80,6 +80,7 @@ if __name__ == '__main__':
 
     sta_info = sif.sta_info_interface()
     sta_info.connect()
+    sta_info.add_svec_line("ZWE2 ZWEN 2009 09 22 00 00  0.00 946080000.00 AOAD/M_T       0.0000      0.0000      0.0460      0.0000 l bkg3.zwen_20040929.log ")
     sta_info.dump()
 
 

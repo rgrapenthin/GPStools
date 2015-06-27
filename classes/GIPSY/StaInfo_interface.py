@@ -13,7 +13,7 @@
 #
 #####################################################################################
 
-from datetime import datetime
+import datetime as DT 
 import os,sys
 import sqlite3
 
@@ -40,13 +40,13 @@ class sta_info_interface(object):
     sta_pos         = "sta_pos"     #This file associates the station identifier with the station coordinates at some epoch and the station velocity. 
     sta_svec        = "sta_svec"    #This file associates the station identifier with the site vector and antenna type at some epoch.
     
-    sta_svec_columns= "(to_site TEXT, from_site TEXT, year INTEGER, month INTEGER, day INTEGER, hour INTEGER, minute INTEGER, second REAL, \
+    sta_svec_colinit= "(to_site TEXT, from_site TEXT, year INTEGER, month INTEGER, day INTEGER, hour INTEGER, minute INTEGER, second REAL, \
                         duration REAL, antenna TEXT, arp_vec_east REAL, arp_vec_north REAL, arp_vec_up REAL, antenna_height REAL, \
-                        sys_flag TEXT, comment TEXT)"
-    sta_svec_columns2= "(to_site, from_site, year, month, day, hour, minute, second, \
+                        sys_flag TEXT, comment TEXT, date TIMESTAMP)"
+    sta_svec_columns= "(to_site, from_site, year, month, day, hour, minute, second, \
                         duration, antenna, arp_vec_east, arp_vec_north, arp_vec_up, antenna_height, \
-                        sys_flag, comment)"
-    sta_svec_values= " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                        sys_flag, comment, date)"
+    sta_svec_values= " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     
     db          = None
     db_cursor   = None
@@ -75,21 +75,39 @@ class sta_info_interface(object):
         self.db       = sqlite3.connect(':memory:')
         self.db_cursor= self.db.cursor()
         #create respective tables
-        self.db.execute("CREATE TABLE sta_svec "+self.sta_svec_columns)
+        self.db.execute("CREATE TABLE sta_svec "+self.sta_svec_colinit)
         self.db.commit()
 
     def connect(self):
         with open(self.sta_svec) as f:
             for x in f.readlines():
-                x = x.rstrip('\n').split()
-                l = x[:15]
-                l.append(' '.join(x[15:]))
-                self.db_cursor.execute(''' INSERT INTO sta_svec ''' + self.sta_svec_columns2 + ''' VALUES ''' + self.sta_svec_values , l)
+                l = self.svec_line2list(x)
+                l.append(DT.datetime(int(l[2]), int(l[3]), int(l[4]), int(l[5]), int(l[6]), int(l[7].split('.')[0])))
+                self.db_cursor.execute(''' INSERT INTO sta_svec ''' + self.sta_svec_columns + ''' VALUES ''' + self.sta_svec_values , l)
                 self.db.commit()
 
+    def svec_line2list(self, line):
+    	'''
+        comments can contain spaces in the text file, we need to make sure this will 
+        be committed to the database as 1 field hence the splitting, appending etc.
+    	'''
+        x = line.split()
+        l = x[:15]
+        l.append(' '.join(x[15:]))
+        return l
+
+    def add_svec_line(self, line):
+        line = self.svec_line2list(line)
+        line.append(DT.datetime(int(line[2]), int(line[3]), int(line[4]), int(line[5]), int(line[6]), int(line[7].split('.')[0]))) 
+        self.db.execute(''' INSERT INTO sta_svec ''' + self.sta_svec_columns + ''' VALUES ''' + self.sta_svec_values, line)
+        self.db.commit()
+
     def dump(self, table="sta_svec"):
-        for row in self.db_cursor.execute('SELECT * FROM '+table):
-            print " %.4s %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %12.2f %-9.9s %11.4f %11.4f %11.4f %11.4f %.1s %-60.60s" % row
+        #get all unique sites
+        for site in self.db.execute('SELECT DISTINCT to_site FROM '+table): 
+            #get all rows for sites, print them ordered by datetime, which will not be printed!
+            for row in self.db.execute("SELECT * FROM "+table+" WHERE to_site = '" + site[0] + "' ORDER BY date ASC"):
+            	print " %.4s %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %12.2f %-9.9s %11.4f %11.4f %11.4f %11.4f %.1s %-60.60s" % row[:-1]
         
 
         
