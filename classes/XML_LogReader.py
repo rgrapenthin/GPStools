@@ -64,6 +64,10 @@ class XML_LogReader(object):
     def second(self):
         return self.prepdate.second+self.prepdate.microsecond
 
+    def first_installed(self):
+        '''we define this as time of first antenna deployment'''
+        return self.antennas()[0]['installed']
+
     def duration(self):
         #this is the standard in GIPSY sta_pos file
         return 1000001.00
@@ -100,7 +104,10 @@ class XML_LogReader(object):
     def site_name(self):
         return self.root.findall('site-identification')[0].findall('site-name')[0].text
 
-    def sta_number(self):
+    def site_full_name(self):
+        return self.root.findall('site-identification')[0].findall('site-name')[0].text+", "+self.log_city()+", "+self.log_country
+
+    def site_number(self):
         #official GPS stataion numbers do not yet exist
         return 0
 

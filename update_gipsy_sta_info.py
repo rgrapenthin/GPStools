@@ -114,8 +114,19 @@ if __name__ == '__main__':
     sta_info = sif.sta_info_interface()
     sta_info.connect()
 
+    #Update STA ID TABLE
+    if not sta_info.got_sta_id(log.site()):
+        sta_info.add_sta_id(log.site(), log.site_number(), log.site_full_name())
 
-    sta_info.add_svec_line("ZWE2 ZWEN 2009 09 22 00 00  0.00 946080000.00 AOAD/M_T       0.0000      0.0000      0.0460      0.0000 l bkg3.zwen_20040929.log ")
-    sta_info.dump(table="sta_id")
+#    sta_info.dump_sta_id()
+    #Update SVEC TABLE
+    sta_info.update_svec(log.site(), log.antennas())
+    
+#    sta_info.dump_svec()
 
+    #Update POS TABLE
+    sta_info.add_pos(log.site(), log.first_installed(), log.XPos(), log.YPos(), log.ZPos(), log.XVel(), log.YVel(), log.ZVel())
+    sta_info.dump_sta_pos()
+    
+    sta_info.close()
 
