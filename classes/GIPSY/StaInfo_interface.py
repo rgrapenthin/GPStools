@@ -1,3 +1,4 @@
+# -*- coding: utf_8 -*-
 #####################################################################################
 # sta_info_interface.py part of GPStools 
 #
@@ -39,7 +40,8 @@ class sta_info_interface(object):
     sta_id          = "sta_id"      #In this file, a given station name is associated with a station identifier and a station number.
     sta_pos         = "sta_pos"     #This file associates the station identifier with the station coordinates at some epoch and the station velocity. 
     sta_svec        = "sta_svec"    #This file associates the station identifier with the site vector and antenna type at some epoch.
-    
+
+    #for table sta_svec    
     sta_svec_colinit= "(to_site TEXT, from_site TEXT, year INTEGER, month INTEGER, day INTEGER, hour INTEGER, minute INTEGER, second REAL, \
                         duration REAL, antenna TEXT, arp_vec_east REAL, arp_vec_north REAL, arp_vec_up REAL, antenna_height REAL, \
                         sys_flag TEXT, comment TEXT, date TIMESTAMP)"
@@ -47,6 +49,27 @@ class sta_info_interface(object):
                         duration, antenna, arp_vec_east, arp_vec_north, arp_vec_up, antenna_height, \
                         sys_flag, comment, date)"
     sta_svec_values= " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
+    #for table sta_id
+    sta_id_colinit= "(sta_id TEXT, sta_number INTEGER, comment TEXT)"
+    sta_id_columns= "(sta_id, sta_number, comment)"
+    sta_id_values= " (?, ?, ?)"
+
+    #for table sta_pos
+    sta_pos_colinit= "(sta_id TEXT, year INTEGER, month INTEGER, day INTEGER, hour INTEGER, minute INTEGER, second REAL, \
+                        duration REAL, pos_x REAL, pos_y REAL, pos_z REAL, vel_x REAL, vel_y REAL, vel_z REAL, comment TEXT, date TIMESTAMP)"
+    sta_pos_columns= "(sta_id, year, month, day, hour, minute, second, \
+                        duration, pos_x, pos_y, pos_z, vel_x, vel_y, vel_z, comment, date)"
+    sta_pos_values= " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
+    #for table pcenter
+    pcenter_colinit= "(to_site TEXT, from_site TEXT, year INTEGER, month INTEGER, day INTEGER, hour INTEGER, minute INTEGER, second REAL, \
+                        duration REAL, antenna TEXT, arp_vec_east REAL, arp_vec_north REAL, arp_vec_up REAL, antenna_height REAL, \
+                        sys_flag TEXT, comment TEXT, date TIMESTAMP)"
+    pcenter_columns= "(to_site, from_site, year, month, day, hour, minute, second, \
+                        duration, antenna, arp_vec_east, arp_vec_north, arp_vec_up, antenna_height, \
+                        sys_flag, comment, date)"
+    pcenter_values= " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     
     db          = None
     db_cursor   = None
@@ -56,12 +79,12 @@ class sta_info_interface(object):
         self.sta_info_path = os.environ.get('GIPSY_STA_INFO')
         
         if self.sta_info_path is None:
-            sys.stderr.write("GIPSY_STA_INFO environment variable not set, trying GIPSY sta_info database\n")
+            sys.stderr.write("GIPSY_STA_INFO environment variable not set, trying default GIPSY sta_info database at $GOA_VAR\n")
 
             self.sta_info_path = os.environ.get('GOA_VAR')
 
             if self.sta_info_path is None:
-                raise ("Neither GIPSY_STA_INFO nor GOA_VAR environment variables set, can't connect to a database\n")
+                raise ("Neither GIPSY_STA_INFO nor GOA_VAR environment variables set, can't connect to a database.\n")
             else:
                 self.sta_info_path += "/sta_info"
                 sys.stderr.write("Warning: working on original GIPSY sta_info database, changes may be overwritten on system update.\n")
@@ -73,33 +96,54 @@ class sta_info_interface(object):
         
         #set up in-memory SQLite database
         self.db       = sqlite3.connect(':memory:')
+        self.db.text_factory = str
         self.db_cursor= self.db.cursor()
         #create respective tables
         self.db.execute("CREATE TABLE sta_svec "+self.sta_svec_colinit)
+        self.db.execute("CREATE TABLE sta_id "  +self.sta_id_colinit)
+        self.db.execute("CREATE TABLE sta_pos " +self.sta_pos_colinit)
+        self.db.execute("CREATE TABLE pcenter " +self.pcenter_colinit)
         self.db.commit()
 
     def connect(self):
         with open(self.sta_svec) as f:
             for x in f.readlines():
-                l = self.svec_line2list(x)
-                l.append(DT.datetime(int(l[2]), int(l[3]), int(l[4]), int(l[5]), int(l[6]), int(l[7].split('.')[0])))
-                self.db_cursor.execute(''' INSERT INTO sta_svec ''' + self.sta_svec_columns + ''' VALUES ''' + self.sta_svec_values , l)
-                self.db.commit()
+                self.add_svec_line(x)
 
-    def svec_line2list(self, line):
-    	'''
-        comments can contain spaces in the text file, we need to make sure this will 
-        be committed to the database as 1 field hence the splitting, appending etc.
-    	'''
-        x = line.split()
-        l = x[:15]
-        l.append(' '.join(x[15:]))
-        return l
+        with open(self.sta_id) as f:
+            for x in f.readlines():
+                self.add_id_line(x)
+
+        with open(self.sta_pos) as f:
+            for x in f.readlines():
+                self.add_pos_line(x)
+
+#        with open(self.pcenter) as f:
+#            for x in f.readlines():
+#                self.add_pcenter_line(x)
 
     def add_svec_line(self, line):
-        line = self.svec_line2list(line)
+        x    = line.split()
+        line = x[:15]
+        line.append(' '.join(x[15:]))
         line.append(DT.datetime(int(line[2]), int(line[3]), int(line[4]), int(line[5]), int(line[6]), int(line[7].split('.')[0]))) 
         self.db.execute(''' INSERT INTO sta_svec ''' + self.sta_svec_columns + ''' VALUES ''' + self.sta_svec_values, line)
+        self.db.commit()
+
+    def add_id_line(self, line):
+        x    = line.split()
+        line = x[:2]
+        line.append(' '.join(x[2:]))
+        self.db.execute(''' INSERT INTO sta_id ''' + self.sta_id_columns + ''' VALUES ''' + self.sta_id_values, line)
+        self.db.commit()
+
+    def add_pos_line(self, line):
+        import re
+        x    = re.split(r'[: ]+',line.strip()) #need to split multiple separators here
+        line = x[:14]
+        line.append(' '.join(x[14:]))
+        line.append(DT.datetime(int(line[1]), int(line[2]), int(line[3]), int(line[4]), int(line[5]), int(line[6].split('.')[0]))) 
+        self.db.execute(''' INSERT INTO sta_pos ''' + self.sta_pos_columns + ''' VALUES ''' + self.sta_pos_values, line)
         self.db.commit()
 
     def dump(self, table="sta_svec"):

@@ -82,7 +82,7 @@ if archive and not url:
         usage()
         sys.exit(2)
 
-      
+##invoke util function to do the heavy lifting     
 util.get_site_log(archive=archive, site=site, url=url)
 
 

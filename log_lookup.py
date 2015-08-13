@@ -33,6 +33,7 @@ OPTIONS:\n\
 GIPSY-SPECIFIC OPTIONS:\n\
        --gipsy-pos\t\tget site positition in Gipsy site_pos format\n\
        --gipsy-id\t\tget site information in Gipsy site_id format\n\n\
+       --gipsy-svec\t\tget site information in Gipsy site_svec format\n\n\
 Report bugs to rg@nmt.edu\n\
 "
 
@@ -106,7 +107,7 @@ if not site:
 if not os.path.isfile(xmlfile):
     sys.stderr.write("\nError: Can't find record for site `"+site+"' in GPS_SITE_DOC. `"+xmlfile+"' does not exist.\n")
     sys.stderr.write("Attempting retrieval ...\n")
-    os.system("./get_site_log.py -s %s" % site)
+    os.system("get_site_log.py -s %s" % site)
     
     #still nothing ...
     if not os.path.isfile(xmlfile):
@@ -145,7 +146,7 @@ if arp_vector:
 
 #print site_pos format, if asked for
 if gipsy_pos:
-    print " %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %10.2f %15.4f %15.4f %15.4f %15.8E %15.8E %15.8E %.30s" % \
+    print " %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %10.2f %15.4f %14.4f %14.4f %15.7E %14.7E %14.7E %.30s" % \
             ( 
              log.site().upper(),
              log.year(), log.month(),  log.day(), 
@@ -181,7 +182,7 @@ if gipsy_svec:
     for antenna in reversed(antennas):
         dt = prev_antenna_installed - antenna['installed'] if prev_antenna_installed is not None else DT.timedelta(seconds=946080000.00)
        
-        svec_string.append( " %.4s %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %12.2f %-9.9s %11.4f %11.4f %11.4f %11.4f %.1s %-60.60s" % 
+        svec_string.append( " %.4s %.4s %.4d %.2d %.2d %.2d %.2d %5.2f %12.2f %-9.9s %11.4f %10.4f %10.4f %10.4f %.1s %-60.60s" % 
                             (log.site().upper(), log.site().upper(),
                             antenna['installed'].year, antenna['installed'].month,  antenna['installed'].day, 
                             antenna['installed'].hour, antenna['installed'].minute, antenna['installed'].second,
@@ -196,5 +197,5 @@ if gipsy_svec:
         
     #put them out in chronological order
     for svec in reversed(svec_string):
-        print svec
+        print svec.rstrip()
 

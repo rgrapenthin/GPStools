@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf_8 -*-
 #
 #      update_gipsy_sta_info.py
 #
@@ -22,9 +23,9 @@ import sys, getopt, os, shutil
 import datetime as DT
 from classes.XML_LogReader import XML_LogReader
 from classes.GIPSY import StaInfo_interface as sif
+import util.util as util
 
-
-def usage():
+def usage(error=None):
     print "Usage: update_gipsy_sta_info.py -s <site-id> [-h | --help] [-p | --pos] [-v | --arp-vector] [--gipsy-id] [--gipsy-pos] [--gipsy-svec]\n\
 log_lookup.py, GPStools\n\n\
 Author: rn grapenthin, New Mexico Tech\n\n\
@@ -38,6 +39,8 @@ GIPSY-SPECIFIC OPTIONS:\n\
        --gipsy-id\t\tget site information in Gipsy site_id format\n\n\
 Report bugs to rg@nmt.edu\n\
 "
+    if error:
+        print "\nError: "+error+"\n\n"
 
 ############# ############# ############# 
 ############# MAIN STUFF
@@ -53,7 +56,7 @@ if __name__ == '__main__':
         sys.exit(2)
 
     ##variables used here
-    site                = ''
+    site                = None
     xmlfile             = ''
     gps_site_doc        = os.environ.get('GPS_SITE_DOC')
     arp_vector          = False
@@ -75,12 +78,44 @@ if __name__ == '__main__':
         if opt in ("-h", "--help"):
             usage()
             sys.exit(2)
+#site
+        elif opt in ("-s", "--site"):
+            site    = arg.lower()
+            xmlfile = gps_site_doc+"/"+site+".xml"
         else:
             assert False, "unhandled option: `%s'" % opt
 
+    if not site: 
+        usage(error="Need to give site id")
+        sys.exit(2)
+        
+###----------------------
+#+#READ XML log
+###----------------------
+    try:
+        log = XML_LogReader(xmlfile, site)
+    except IOError as e:
+        #file not found, try FTP download from usual archives
+        sys.stderr.write("Site `"+site+"' not in local database; trying remote retrieval ...\n")
+        util.get_site_log(site=site)              
+        log = XML_LogReader(xmlfile, site)
+    except Exception as e:
+        #I guess we're doomed!
+        sys.stderr.write("\nSomething went wrong ... \n\n")
+        sys.stderr.write("%s\n\n" % e)
+        sys.stderr.write(" ... better try again.\n")
+        sys.exit(2)    
+
+    print "Updating site `"+site+"' ("+log.site_name()+")"
+
+###----------------------
+#+#Connect to GIPSY sta_info database
+###----------------------
     sta_info = sif.sta_info_interface()
     sta_info.connect()
+
+
     sta_info.add_svec_line("ZWE2 ZWEN 2009 09 22 00 00  0.00 946080000.00 AOAD/M_T       0.0000      0.0000      0.0460      0.0000 l bkg3.zwen_20040929.log ")
-    sta_info.dump()
+    sta_info.dump(table="sta_id")
 
 
