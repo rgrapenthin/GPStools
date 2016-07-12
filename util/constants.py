@@ -1,4 +1,3 @@
-
 TEQC_f_name         = 'filename'
 TEQC_f_format       = 'file format'
 TEQC_f_size         = 'file size (bytes)'
@@ -20,4 +19,8 @@ TEQC_rcx_type       = 'receiver type'
 TEQC_rcx_firm       = 'receiver firmware'
 
 TEQC_date_format    = '%Y-%m-%d %H:%M:%S.%f'
+
+TEQC_format_translation_map = {'Trimble .dat':'-tr d'}
+
+GPSweek             = 'gpsweek'
 

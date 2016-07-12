@@ -6,16 +6,19 @@ add date / range of dates to request lists
 
 import sys,os
 import datetime, getopt
-import  subprocess 
 import util.constants as const
-from plog.plog import Logger
+import subprocess
+
+from plog.plog import Logger, CleanShutdownRequest
+from classes.Teqc import Teqc
+from classes.StationDB import StationDB
 
 ############# ############# ############# 
 ############# AUX STUFF
 ############# ############# ############# 
 
 def usage():
-    print "Usage: raw2rinex.py --site \n\
+    print "Usage: raw2rinex.py --site <4-char-id> --file <e.g., trimble .dat file>\n\
 Author: rn grapenthin, NMT"
 
 ############# ############# ############# 
@@ -24,23 +27,13 @@ Author: rn grapenthin, NMT"
 
 if __name__ == '__main__':
 
-    file_id = None
-    site_id = None
+    raw_file = None
+    site_id  = None
 
-# find teqc binary
-    proc = subprocess.Popen(['which', 'teqc'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    teqc_bin, err = proc.communicate()
-    
-    if len(teqc_bin) == 0 :
-        Logger.error("Error: Can't find teqc binary", 2)
-
-    if err != None:
-        Logger.error(err, 2)
-        
 ##read command line
     try:
         #rg ":" and "=" indicate that these parameters take arguments! Do not simply delete these!
-        opts, args = getopt.getopt(sys.argv[1:], "s:f:h", ["site=", "file=", "help"])
+        opts, args = getopt.getopt(sys.argv[1:], "s:f:hq", ["site=", "file=", "help", "quiet"])
     except getopt.GetoptError as e:
         sys.stderr.write("Error: {0} \n\n".format(e.msg))
         usage()
@@ -56,42 +49,53 @@ if __name__ == '__main__':
             site_id = arg.upper()
 #EVENT
         elif opt in ("-f", "--file"):
-            file_id = str(arg)
+            raw_file = str(arg)
+#quite
+        elif opt in ("-q", "--quiet"):
+            Logger.off()
 #unknown
         else:
             assert False, "unhandled option: `%s'" % opt
 
-    #TODO: Move this stuff into its own class... teqc.py call: meta = teqc.meta(file_id)
-    meta = subprocess.Popen(['teqc', '+quiet', '+meta', file_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    Logger.info("-"*80)
+    Logger.info("Info: Working on file `%s' for site `%s'" % (raw_file, site_id))
 
-    out, err = meta.communicate()
+#+# create station.info interface
+    sta_db  = None
 
-    lines=out.split("\n")
-    meta = {}
+    try:
+        sta_db = StationDB()
+    except CleanShutdownRequest:
+        print "Aborting."
+        sys.exit()
+    
+#+# create teqc object
+    teqc    = None 
 
-    for l in lines:
-        #only split first pair, note that times have ':' too!
-        o = l.split(':',1 )
-        
-        #need exactly 2 elements
-        if len(o) == 2:
-            #convert dates
-            if o[0] == const.TEQC_f_start or o[0] == const.TEQC_f_end:
-                meta[o[0]] = datetime.datetime.strptime(o[1].strip(), const.TEQC_date_format)
-            #convert floats
-            elif o[0] == const.TEQC_sample_int or \
-                 o[0] == const.TEQC_lon or\
-                 o[0] == const.TEQC_lat or\
-                 o[0] == const.TEQC_elev or\
-                 o[0] == const.TEQC_ant_height:
-                meta[o[0]] = float(o[1])
-            #convert ints
-            elif o[0] == const.TEQC_miss_epochs or\
-                 o[0] == const.TEQC_f_size:
-                meta[o[0]] = int(o[1])
-            #rest remains string
-            else:
-                meta[o[0]] = o[1].strip();
+    try:
+        teqc = Teqc(raw_file)
+    except CleanShutdownRequest:
+        print "Aborting."
+        sys.exit()
+
+    teqc.operator   = "Ronni Grapenthin"
+    teqc.agency     = "New Mexico Tech"
+
+    teqc.add_commentLine("")
+    teqc.add_commentLine("For more information about these data contact:")
+    teqc.add_commentLine("")
+    teqc.add_commentLine("Ronni Grapenthin (rg@nmt.edu)")
+    teqc.add_commentLine("         Dept. Earth and Environmental Scienes")
+    teqc.add_commentLine("         New Mexico Tech")
+    teqc.add_commentLine("         801 Leroy Pl")
+    teqc.add_commentLine("         Socorro, NM-87801")
+    teqc.add_commentLine("")
+
+    teqc.add_sv_string("-R -E -S -C -J")
+    teqc.add_observables_string("+P +L2 +L1_2 +C2 +L2_2 +CA_L1 +L2C_L2")
+    
+    #get meta information from raw file
+    meta = teqc.meta()
 
     #some info for the user...
     if meta[const.TEQC_sample_int] > 1.0:
@@ -103,7 +107,17 @@ if __name__ == '__main__':
     if meta[const.TEQC_sta_id] != site_id:
         Logger.info("Info: Given site-id `%s' overrides site-id in receiver file `%s' " % (site_id, meta[const.TEQC_sta_id]))
 
-#    print meta
-    
-    
 
+    #extract the record that spans the correct time from station.info
+    rec = sta_db.get_record(site_id=site_id, start_time=meta[const.TEQC_f_start], end_time=meta[const.TEQC_f_end])
+    rec.calculate_vertical_antenna_height()
+
+    if not rec.operator:
+        rec.operator = teqc.operator
+    if not rec.agency:
+        rec.agency   = teqc.agency
+
+    Logger.info("Info: Using site-record `%s'" % rec)
+    
+    teqc.translate(rec)
+    

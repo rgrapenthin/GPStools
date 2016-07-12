@@ -9,7 +9,7 @@ databases = {}
 #hash table to map data center to log file url -- these are the defaults, could add more for individual applications
 databases['unavco'] = 'ftp://data-out.unavco.org/pub/logs'
 databases['sopac']  = 'ftp://garner.ucsd.edu/pub/docs/site_logs'        
-databases['igs']    = 'ftp://igscb.jpl.nasa.gov/pub/station/finallog'
+databases['igs']    = 'ftp://igscb.jpl.nasa.gov/pub/station/log'
 
 def retrieve_log(url):
     sys.stdout.write('Retrieving '+url + '... ')
